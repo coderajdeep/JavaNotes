@@ -1,5 +1,6 @@
 [ChatGPT](https://chatgpt.com/share/6aab9fc9-d530-83ee-a89a-5192bef46c69)
-Here’s a concise interview-friendly note covering the key points from our discussion.
+
+Sure — I’ve added the **brief `>>` vs `>>>` explanation** to the hash-spreading section while keeping the note concise.
 
 # Java HashMap — Internal Implementation
 
@@ -51,7 +52,7 @@ the internal table is initially **not created**.
 table = null
 ```
 
-This is called **lazy initialization**.
+This is **lazy initialization**.
 
 On the first `put()`, the table is created.
 
@@ -71,13 +72,11 @@ After first put:
 table → array of 16 buckets
 ```
 
-> Note: `new HashMap<>(100)` does not immediately create an array of 100 buckets. The eventual capacity is rounded according to HashMap's power-of-two capacity rules.
-
 ---
 
 ## 3. How `put()` Finds a Bucket
 
-For a key:
+For:
 
 ```java
 map.put("Rajdeep", 100);
@@ -97,19 +96,64 @@ bucket index
 table[index]
 ```
 
-Java's HashMap uses a hash-spreading operation conceptually like:
+---
+
+## 4. Hash Spreading
+
+Hash spreading mixes the **higher bits** of the hash code into the lower bits.
+
+Conceptually:
 
 ```java
-h ^ (h >>> 16)
+int hash = key.hashCode();
+hash = hash ^ (hash >>> 16);
 ```
 
-This mixes higher bits into lower bits.
+### Why?
+
+Bucket selection mainly uses the lower bits:
+
+```java
+index = (n - 1) & hash;
+```
+
+So if the lower bits of different hash codes are similar, many keys may end up in the same bucket.
+
+Hash spreading makes the lower bits depend partly on the higher bits, helping reduce collisions.
+
+### Why `>>> 16`?
+
+A Java `int` is 32 bits:
+
+```text
+AAAAAAAAAAAAAAAA BBBBBBBBBBBBBBBB
+       upper             lower
+```
+
+```java
+h >>> 16
+```
+
+moves the upper 16 bits into the lower 16-bit position and fills the left side with `0`:
+
+```text
+0000000000000000 AAAAAAAAAAAAAAAA
+```
+
+Java has two right-shift operators:
+
+```text
+>>   → signed right shift; preserves the sign bit
+>>>  → unsigned right shift; fills with 0
+```
+
+`HashMap` uses `>>>` so the shift behaves consistently even when the hash is negative.
 
 ---
 
-## 4. Calculating the Bucket Index
+## 5. Calculating the Bucket Index
 
-The bucket index is calculated approximately as:
+The bucket index is approximately:
 
 ```java
 index = (n - 1) & hash;
@@ -149,7 +193,7 @@ which corresponds to the 16 buckets.
 
 ---
 
-## 5. Why `(n - 1) & hash`?
+## 6. Why `(n - 1) & hash`?
 
 `HashMap` keeps its table capacity as a **power of 2**:
 
@@ -161,23 +205,16 @@ If:
 
 ```text
 n = 16
+n - 1 = 15 = 00001111
 ```
 
 then:
-
-```text
-n - 1 = 15
-          ↓
-       00001111
-```
-
-Therefore:
 
 ```java
 hash & 15
 ```
 
-effectively extracts the lower bits needed to determine the bucket.
+effectively extracts the lower bits needed for the bucket index.
 
 For a power-of-two `n`:
 
@@ -195,7 +232,7 @@ while being very efficient.
 
 ---
 
-## 6. What if the Bucket Is Empty?
+## 7. What if the Bucket Is Empty?
 
 If:
 
@@ -217,14 +254,14 @@ table[5]
 
 ---
 
-## 7. Collision
+## 8. Collision
 
 Different keys can produce the same bucket index.
 
 Example:
 
 ```text
-"A"      → bucket 5
+"A"       → bucket 5
 "Rajdeep" → bucket 5
 ```
 
@@ -238,15 +275,13 @@ Node("A", 200)
    |
    v
 Node("Rajdeep", 100)
-   |
-  null
 ```
 
 Initially, collisions are handled using a **linked list**.
 
 ---
 
-## 8. Linked List → Red-Black Tree
+## 9. Linked List → Red-Black Tree
 
 If a bucket becomes heavily populated, Java 8+ `HashMap` can convert the bucket's linked list into a **Red-Black Tree**.
 
@@ -260,19 +295,16 @@ MIN_TREEIFY_CAPACITY = 64
 
 The table may be resized instead of immediately treeifying when the table is still small.
 
-This improves lookup in heavily-collided buckets:
+Complexity:
 
 ```text
-Linked List:
-O(n)
-
-Red-Black Tree:
-O(log n)
+Linked List → O(n)
+Red-Black Tree → O(log n)
 ```
 
 ---
 
-## 9. How `get()` Works
+## 10. How `get()` Works
 
 For:
 
@@ -304,7 +336,7 @@ HashMap therefore uses **both `hashCode()` and `equals()`** to identify a key.
 
 ---
 
-## 10. `null` Key
+## 11. `null` Key
 
 `HashMap` allows **one `null` key**.
 
@@ -322,7 +354,7 @@ hash = 0
 bucket 0
 ```
 
-### Important:
+### Important
 
 **Bucket 0 is NOT reserved for the `null` key.**
 
@@ -332,7 +364,7 @@ A normal key can also produce:
 (n - 1) & hash == 0
 ```
 
-and therefore also go into bucket 0.
+and therefore go into bucket 0.
 
 Example:
 
@@ -366,7 +398,7 @@ So:
 
 ---
 
-## 11. Duplicate Keys
+## 12. Duplicate Keys
 
 If:
 
@@ -385,7 +417,7 @@ It finds the existing key using hash + `equals()` and updates the value:
 
 ---
 
-## 12. Resizing
+## 13. Resizing
 
 Default load factor:
 
@@ -412,7 +444,7 @@ During resizing, Java can efficiently determine whether an entry stays at its ol
 
 ---
 
-## 13. `equals()` / `hashCode()` Contract
+## 14. `equals()` / `hashCode()` Contract
 
 For keys:
 
@@ -433,6 +465,8 @@ Remember:
 ```text
 hashCode()
     ↓
+hash spreading
+    ↓
 find bucket
     ↓
 hash comparison
@@ -449,21 +483,26 @@ key found
 1. **HashMap = array of buckets + linked lists + Red-Black Trees.**
 2. The table is **lazily initialized**; initially `table == null`.
 3. Default initial capacity is **16** when the table is first created.
-4. HashMap uses hash spreading before calculating the bucket.
-5. Bucket index:
+4. HashMap applies **hash spreading** before calculating the bucket.
+5. Hash spreading uses:
+
+```java
+h ^ (h >>> 16)
+```
+
+6. `>>>` is a **zero-filled right shift**; `>>` preserves the sign bit.
+7. Bucket index:
 
 ```java
 (n - 1) & hash
 ```
 
-6. Capacity is kept as a **power of 2**, enabling efficient bucket calculation.
-7. Multiple keys can have the same bucket → **collision**.
-8. Heavy collisions can convert a linked list into a **Red-Black Tree**.
-9. `null` key has hash `0`, but **bucket 0 is not reserved for null**.
-10. HashMap uses **both `hashCode()` and `equals()`**.
-11. Default load factor is **0.75**.
-12. When the threshold is exceeded, HashMap **resizes**.
-13. Average `get()` / `put()` complexity is **O(1)**.
-14. Treeified buckets provide approximately **O(log n)** lookup.
-
-This is a good note to keep alongside your JVM/JDK/JRE notes; the next logical topic is the **actual `HashMap.put()` flow (`putVal → hash → resize → collision handling → treeify`)**.
+8. Capacity is kept as a **power of 2**, enabling efficient bucket calculation.
+9. Multiple keys can have the same bucket → **collision**.
+10. Heavy collisions can convert a linked list into a **Red-Black Tree**.
+11. `null` key has hash `0`, but **bucket 0 is not reserved for null**.
+12. HashMap uses **both `hashCode()` and `equals()`**.
+13. Default load factor is **0.75**.
+14. When the threshold is exceeded, HashMap **resizes**.
+15. Average `get()` / `put()` complexity is **O(1)**.
+16. Treeified buckets provide approximately **O(log n)** lookup.
