@@ -1,4 +1,5 @@
 [ChatGPT](https://chatgpt.com/share/6aab9fc9-d530-83ee-a89a-5192bef46c69)
+[Youtube](https://youtu.be/1CJbB6SzjVw)
 
 # Java HashMap — Internal Implementation
 
