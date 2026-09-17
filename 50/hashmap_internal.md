@@ -1,7 +1,5 @@
 [ChatGPT](https://chatgpt.com/share/6aab9fc9-d530-83ee-a89a-5192bef46c69)
 
-Sure — I’ve added the **brief `>>` vs `>>>` explanation** to the hash-spreading section while keeping the note concise.
-
 # Java HashMap — Internal Implementation
 
 ## 1. Internal Structure
